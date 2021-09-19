@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import {
   SearchbarBlock,
@@ -8,47 +8,44 @@ import {
   SearchFormInput,
 } from "./Searchbar.styled";
 
-export class Searchbar extends Component {
-  state = {
-    searchValue: "",
-  };
-  handleInputValue = (event) => {
-    this.setState({ searchValue: event.currentTarget.value });
+export function Searchbar({ onSubmit }) {
+  const [searchValue, setSearchValue] = useState("");
+
+  const handleInputValue = (event) => {
+    setSearchValue(event.currentTarget.value);
   };
 
-  handleOnSubmitform = (event) => {
+  const handleOnSubmitform = (event) => {
     event.preventDefault();
-    if (this.state.searchValue.trim() === "") {
+    if (searchValue.trim() === "") {
       toast.warn("Enter the search request !");
       return;
     }
-    this.props.onSubmit(this.state.searchValue);
-    this.setState({ searchValue: "" });
+    onSubmit(searchValue);
+    setSearchValue("");
   };
-  render() {
-    return (
-      <div>
-        <SearchbarBlock>
-          <SearchForm onSubmit={this.handleOnSubmitform}>
-            <SearchFormButton type="submit">
-              <SearchFormButtonLabel>Search</SearchFormButtonLabel>
-            </SearchFormButton>
+  return (
+    <div>
+      <SearchbarBlock>
+        <SearchForm onSubmit={handleOnSubmitform}>
+          <SearchFormButton type="submit">
+            <SearchFormButtonLabel>Search</SearchFormButtonLabel>
+          </SearchFormButton>
 
-            <SearchFormInput
-              className="SearchForm-input"
-              type="text"
-              autoComplete="off"
-              autoFocus
-              placeholder="Search images and photos"
-              value={this.state.searchValue}
-              onChange={this.handleInputValue}
-            />
-          </SearchForm>
-        </SearchbarBlock>
-        <ToastContainer position="top-right" autoClose={3000} />
+          <SearchFormInput
+            className="SearchForm-input"
+            type="text"
+            autoComplete="off"
+            autoFocus
+            placeholder="Search images and photos"
+            value={searchValue}
+            onChange={handleInputValue}
+          />
+        </SearchForm>
+      </SearchbarBlock>
+      <ToastContainer position="top-right" autoClose={3000} />
 
-        <ToastContainer />
-      </div>
-    );
-  }
+      <ToastContainer />
+    </div>
+  );
 }

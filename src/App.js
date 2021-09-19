@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import Loader from "react-loader-spinner";
 import { ErrorMessage } from "./components/Error/ErrorMessage";
 import "react-toastify/dist/ReactToastify.css";
@@ -15,63 +15,57 @@ const Status = {
   REJECTED: "rejected",
 };
 
-export class App extends Component {
-  state = {
-    searchValue: "",
-    page: 1,
-    images: [],
-    error: null,
-    status: Status.IDLE,
-    selectedImage: null,
-  };
-  handleFormSubmit = (searchValue) => {
-    this.setState({ searchValue, page: 1, images: [] });
-  };
-  incrementPage = () => {
-    this.setState((prevState) => ({ page: prevState.page + 1 }));
-  };
-  handleSelectImage = (data) => {
-    this.setState({ selectedImage: data });
-  };
-  handleCloseModal = () => {
-    this.setState({ selectedImage: null });
+export function App() {
+  const [searchValue, setSearchValue] = useState("");
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState(Status.IDLE);
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  const handleFormSubmit = (searchValue) => {
+    setSearchValue(searchValue);
+    setPage(1);
+    setImages([]);
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    const nextValue = this.state.searchValue;
-    const prevValue = prevState.searchValue;
+  const incrementPage = () => {
+    setPage((prevState) => prevState + 1);
+  };
 
-    if (prevValue !== nextValue || prevState.page !== this.state.page) {
-      this.setState({ status: Status.PENDING });
+  const handleSelectImage = (data) => {
+    setSelectedImage(data);
+  };
 
+  const handleCloseModal = () => {
+    setSelectedImage(null);
+  };
+
+  useEffect(() => {
+    if (!searchValue) {
+      return;
+    }
+
+    const fetchImages = () => {
+      setStatus(Status.PENDING);
       api
-        .fetchImages(nextValue, this.state.page)
+        .fetchImages(searchValue, page)
         .then((data) => {
-          this.setState((prevState) => ({
-            images: [...prevState.images, ...data.hits],
-            status: Status.RESOLVED,
-          }));
+          setImages((prevImages) => [...prevImages, ...data.hits]);
+          setStatus(Status.RESOLVED);
         })
-        .catch((error) => console.log(error));
-    }
-    if (this.state.page > 1) {
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: "smooth",
-      });
-    }
-  }
+        .catch((error) => setError(error));
+    };
+    fetchImages();
+  }, [page, searchValue]);
 
-  render() {
-    const { images, status, selectedImage } = this.state;
-
-    if (status === "idle") {
-      return <Searchbar onSubmit={this.handleFormSubmit} />;
-    }
-    if (status === "pending") {
-      return (
+  return (
+    <>
+      {error && <h1>An error has occurred!</h1>}
+      {status === Status.IDLE && <Searchbar onSubmit={handleFormSubmit} />}
+      {status === Status.PENDING && (
         <div>
-          <Searchbar onSubmit={this.handleFormSubmit} />
+          <Searchbar onSubmit={handleFormSubmit} />
           <Loader
             type="Grid"
             color="Grey"
@@ -81,26 +75,20 @@ export class App extends Component {
             style={{ textAlign: "center", marginTop: "30vw" }}
           />
         </div>
-      );
-    }
-
-    if (status === "resolved") {
-      return (
+      )}
+      {status === Status.RESOLVED && (
         <>
-          <Searchbar onSubmit={this.handleFormSubmit} />
-          <ImageGallery
-            images={images}
-            onSelectImage={this.handleSelectImage}
-          />
-          {images.length > 0 && <Button onClick={this.incrementPage} />}
-          {this.state.selectedImage && (
-            <Modal image={selectedImage} onCloseModal={this.handleCloseModal} />
+          <Searchbar onSubmit={handleFormSubmit} />
+          <ImageGallery images={images} onSelectImage={handleSelectImage} />
+          {images.length > 0 && <Button page={page} onClick={incrementPage} />}
+          {selectedImage && (
+            <Modal image={selectedImage} onCloseModal={handleCloseModal} />
           )}
           {images.length === 0 && (
             <ErrorMessage text={`Sorry!We don't have images with this name`} />
           )}
         </>
-      );
-    }
-  }
+      )}
+    </>
+  );
 }
